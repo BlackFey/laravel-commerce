@@ -1,0 +1,53 @@
+version: '3'
+services:
+
+  #PHP Service
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: digitalocean.com/php
+    expose:
+      - "9000"
+    environment:
+      - PUID=${UID}
+    volumes:
+      - "./.docker/config/php/xdebug.ini:/usr/local/etc/php/conf.d/20-xdebug.ini"
+      - ".:/var/www/html:delegated"
+      - "./.docker/storage/npm:/.npm"
+      - "./.docker/storage/composer:/.composer"
+
+  #Nginx Service
+  web:
+    image: "nginx:latest"
+    ports:
+      - "80:80"
+    volumes:
+      - ".:/var/www/html:delegated"
+      - "./.docker/config/nginx/default.conf:/etc/nginx/conf.d/default.conf"
+    networks:
+      default:
+        aliases:
+          - "laravel.local"
+
+  #MySQL Service
+  db:
+    image: "mysql/mysql-server:5.7"
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_ROOT_USER: "root"
+      MYSQL_USER: "laravel"
+      MYSQL_PASSWORD: "laravel"
+    volumes:
+      - "./.docker/storage/mysql:/var/lib/mysql"
+      - "./.docker/config/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql"
+
+  phpmyadmin:
+    image: "phpmyadmin/phpmyadmin:latest"
+    ports:
+      - "8080:8080:80"
+    volumes:
+      - "./.docker/config/phpmyadmin/config.inc.php:/etc/phpmyadmin/config.inc.php"
+      - "./.docker/config/phpmyadmin/php.ini:/usr/local/etc/php/php.ini"
